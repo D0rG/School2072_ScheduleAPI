@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Schedule
 {
@@ -27,25 +28,77 @@ namespace Schedule
         public static Dictionary<Day, List<Lesson>> schoolSchedule;
     }
 
+    public class RowCollection
+    {
+        private string html;
+        public List<Row> rows = new List<Row>();
+        public int Count => rows.Count;
+
+        public RowCollection(string html, int start, int end)
+        {
+            this.html = html;
+            rows = GetAllRows(html).Where(x => (x.startIndex >= start && x.startIndex <= end)).ToList();
+            if (rows.Count > 0) { rows.RemoveAt(0); }   //Удяляем первый элемент, т.к. в нем только дни недели.
+        }
+
+        private static List<Row> GetAllRows(string html)
+        {
+            List<Row> rows = new List<Row>();
+            if (string.IsNullOrEmpty(html))
+            {
+                return null;
+            }
+
+            int currIndex = 0;
+            Row temp = new Row();
+
+            do
+            {
+                if (!temp.isZero)
+                {
+                    rows.Add(temp);
+                }
+
+                try
+                {
+                    temp.startIndex = html.IndexOf("<tr>", currIndex);
+                    temp.endIndex = html.IndexOf("</tr>", temp.startIndex);
+                    currIndex = temp.endIndex;
+                }
+                catch
+                {
+                    break;
+                }
+            }
+            while (temp.startIndex != -1);
+
+            return rows;
+        }
+
+        public List<Lesson> GetLessons()
+        {
+            var lessons = new List<Lesson>();
+
+            foreach (var row in rows)
+            {
+
+            }
+
+            return lessons;
+        }
+    }
+
     public struct Row
     {
         public int startIndex { get; set; }
         public int endIndex { get; set; }
         public int lenght => endIndex - startIndex;
+        public bool isZero => startIndex == 0 && endIndex == 0;
 
         public void Clear()
         {
             startIndex = -1;
             endIndex = -1;
-        }
-
-        public bool IsZero()
-        {
-            if (startIndex == 0 && endIndex == 0)
-            {
-                return true;
-            }
-            return false;
         }
 
         public bool ContainsClassName(string html, out string className)
@@ -70,7 +123,7 @@ namespace Schedule
             index += 8;
             int endNameIndex = html.IndexOf("</strong>", index);
             className = html.Substring(index, endNameIndex - index);
-            className = className.Replace(" ", String.Empty);
+            className = className.Replace(" ", string.Empty);
             className = className.Replace("»", string.Empty);
             className = className.Replace("«", string.Empty);
 
@@ -96,49 +149,38 @@ namespace Schedule
             return true;
         }
 
-        public List<Lesson> GetLessons(string className, string html)
+        public List<Lesson> GetRowLessons()
         {
-            var lessons = new List<Lesson>();
-            int tryCount = ContainsClassName(html) ? 6 : 5;
-            Lesson lesson = new Lesson();
-            lesson.className = className;
-            Cell temp = new Cell();
+            List<Lesson> result = new List<Lesson>();
 
-            var current
-            do
-            {
-                temp.startIndex = html.IndexOf("<td>", currIndex);
-                temp.endIndex = html.IndexOf("</td>", temp.startIndex);
-                currIndex = temp.endIndex;
-            }
-            while (true);
+            return result;
         }
-    }
 
-    public struct Cell
-    {
-        public int startIndex {  get; set; }
-        public int endIndex { get; set; }
-
-        public bool? isLessonName(string html)
+        public struct Cell
         {
-            var indexName = html.IndexOf("<p>", startIndex);
-            var indexClassNumber = html.IndexOf("<p align=\"center\">", startIndex);
+            public int startIndex { get; set; }
+            public int endIndex { get; set; }
 
-            if (indexName == -1 && indexClassNumber == -1)
+            public bool? isLessonName(string html)
             {
+                var indexName = html.IndexOf("<p>", startIndex);
+                var indexClassNumber = html.IndexOf("<p align=\"center\">", startIndex);
+
+                if (indexName == -1 && indexClassNumber == -1)
+                {
+                    return null;
+                }
+                else if (indexName == -1 && indexClassNumber != -1)
+                {
+                    return false;
+                }
+                else if (indexName != -1 && indexClassNumber == -1)
+                {
+                    return true;
+                }
+
                 return null;
             }
-            else if(indexName == -1 && indexClassNumber != -1)
-            {
-                return false;
-            }
-            else if (indexName != -1 && indexClassNumber == -1)
-            {
-                return true;
-            }
-
-            return null;
         }
     }
 }
