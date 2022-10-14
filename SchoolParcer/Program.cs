@@ -42,13 +42,10 @@ namespace SchoolParcer
 
             string currentClassName = string.Empty;
             Console.WriteLine(rowCollection.rows.Count);
-            foreach (Row row in rowCollection.rows)
+            
+            foreach (var lesson in rowCollection.GetLessons())
             {
-                //if(row.ContainsClassName(httpResult, out string newClassName))
-                //{
-                //    currentClassName = newClassName;
-                //    Console.WriteLine(currentClassName);
-                //}
+                Console.WriteLine(lesson.ToString());
             }
             Console.WriteLine("End Parse");
         }

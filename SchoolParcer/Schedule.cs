@@ -21,6 +21,11 @@ namespace Schedule
         public string className { get; set; }
         public string lessonName { get; set; }
         public string classRoomNumber { get; set; }
+
+        public override string ToString()
+        {
+            return $"Класс: {className}, урок: {lessonName}, Кабинет: {classRoomNumber}, День: {Day}";
+        }
     }
 
     public class Schedule
@@ -79,12 +84,22 @@ namespace Schedule
         {
             var lessons = new List<Lesson>();
 
+            string className = string.Empty;
             foreach (var row in rows)
             {
+                if (row.ContainsClassName(html, out string newClassName))
+                {
+                    className = newClassName;
+                }
 
+                foreach (var lesson in row.GetRowLessons(html))
+                {
+                    var temp = lesson;
+                    temp.className = new string(className);
+                    lessons.Add(temp);
+                }
             }
-
-            return lessons;
+            return lessons.Where(x => !string.IsNullOrEmpty(x.lessonName.Trim())).ToList(); //Отчиста пустых уроков.
         }
     }
 
@@ -149,39 +164,72 @@ namespace Schedule
             return true;
         }
 
-        public List<Lesson> GetRowLessons()
+        public List<Lesson> GetRowLessons(string html)
         {
             List<Lesson> result = new List<Lesson>();
+            html = html.Substring(this.startIndex, lenght);
 
+            int day = 0;
+            int startSearchIndex = 0;
+            int endSearchIndex = 0;
+            while (true)
+            {
+                try
+                {
+                    startSearchIndex = html.IndexOf("<td style", endSearchIndex); //Пропускаем имя класса. 
+                    startSearchIndex = html.IndexOf("<p>", startSearchIndex);
+                    endSearchIndex = html.IndexOf("</p>", startSearchIndex);
+                    startSearchIndex += 3;
+                    Lesson lesson = new Lesson()
+                    {
+                        className = string.Empty,
+                        lessonName = html.Substring(startSearchIndex, endSearchIndex - startSearchIndex),
+                        Day = (Day)day,
+                        classRoomNumber = null
+                    };
+                    endSearchIndex = html.IndexOf("</td>", endSearchIndex);
+                    startSearchIndex = html.IndexOf("<p align=\"center\">", endSearchIndex);
+                    endSearchIndex = html.IndexOf("</p>", startSearchIndex);
+                    startSearchIndex += 18;
+                    lesson.classRoomNumber = html.Substring(startSearchIndex, endSearchIndex - startSearchIndex);
+                    result.Add(lesson);
+                    day++;
+                }
+                catch
+                {
+                    break;
+                }
+
+            }
             return result;
         }
 
-        public struct Cell
-        {
-            public int startIndex { get; set; }
-            public int endIndex { get; set; }
+        //public struct Cell
+        //{
+        //    public int startIndex { get; set; }
+        //    public int endIndex { get; set; }
 
-            public bool? isLessonName(string html)
-            {
-                var indexName = html.IndexOf("<p>", startIndex);
-                var indexClassNumber = html.IndexOf("<p align=\"center\">", startIndex);
+        //    public bool? isLessonName(string html)
+        //    {
+        //        var indexName = html.IndexOf("<p>", startIndex);
+        //        var indexClassNumber = html.IndexOf("<p align=\"center\">", startIndex);
 
-                if (indexName == -1 && indexClassNumber == -1)
-                {
-                    return null;
-                }
-                else if (indexName == -1 && indexClassNumber != -1)
-                {
-                    return false;
-                }
-                else if (indexName != -1 && indexClassNumber == -1)
-                {
-                    return true;
-                }
+        //        if (indexName == -1 && indexClassNumber == -1)
+        //        {
+        //            return null;
+        //        }
+        //        else if (indexName == -1 && indexClassNumber != -1)
+        //        {
+        //            return false;
+        //        }
+        //        else if (indexName != -1 && indexClassNumber == -1)
+        //        {
+        //            return true;
+        //        }
 
-                return null;
-            }
-        }
+        //        return null;
+        //    }
+        //}
     }
 }
 
