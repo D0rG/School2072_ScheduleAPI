@@ -4,27 +4,41 @@ using System.Linq;
 
 namespace Schedule
 {
-    public enum Day
+    public sealed class Parser
     {
-        Monday,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday,
-    }
-
-    public struct Lesson
-    {
-        public Day Day { get; set; }
-        public string className { get; set; }
-        public string lessonName { get; set; }
-        public string classRoomNumber { get; set; }
-
-        public override string ToString()
+        private string[] _schoolNames =
         {
-            return $"Класс: {className}, урок: {lessonName}, Кабинет: {classRoomNumber}, День: {Day}";
+            "Расписание уроков обучающихся учебного корпуса № 3",
+            "Расписание уроков обучающихся учебного корпуса № 2",
+            "Расписание уроков обучающихся учебного корпуса № 1"
+        };
+        private string httpResult = string.Empty;
+        private List<Lesson> _lessons = new List<Lesson>();
+        public List<Lesson> lessons { get { return _lessons; } }
+
+        public Action onScheduleReady;
+
+        internal void ParseAll(string httpResult)
+        {
+            this.httpResult = httpResult;
+            foreach (string schoolName in _schoolNames)
+            {
+                Parse(schoolName);
+            }
+            Console.WriteLine("Ready!");
+            onScheduleReady.Invoke();
+        }
+
+        private void Parse(string schoolName)
+        {
+            var startTableIndex = httpResult.IndexOf(schoolName);
+            startTableIndex = httpResult.IndexOf("<tbody>", startTableIndex);
+            var endTableIndex = httpResult.IndexOf("</tbody>", startTableIndex);
+            RowCollection rowCollection = new RowCollection(httpResult, startTableIndex, endTableIndex);
+            foreach (var lesson in rowCollection.GetLessons())
+            {
+                _lessons.Add(lesson);
+            }
         }
     }
 
@@ -183,15 +197,32 @@ namespace Schedule
                     Lesson lesson = new Lesson()
                     {
                         className = string.Empty,
-                        lessonName = html.Substring(startSearchIndex, endSearchIndex - startSearchIndex),
+                        lessonName = html.Substring(startSearchIndex, endSearchIndex - startSearchIndex).Trim(),
                         Day = (Day)day,
                         classRoomNumber = null
                     };
                     endSearchIndex = html.IndexOf("</td>", endSearchIndex);
-                    startSearchIndex = html.IndexOf("<p align=\"center\">", endSearchIndex);
-                    endSearchIndex = html.IndexOf("</p>", startSearchIndex);
-                    startSearchIndex += 18;
-                    lesson.classRoomNumber = html.Substring(startSearchIndex, endSearchIndex - startSearchIndex);
+
+                    var htmlSub = html.Substring(endSearchIndex + 5, html.IndexOf("</td>", endSearchIndex + 4) - endSearchIndex);
+                    int searchRoomIndexStart = 0;
+                    int searchRoomIndexEnd = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            searchRoomIndexStart = htmlSub.IndexOf("<p align=\"center\">", searchRoomIndexEnd);
+                            searchRoomIndexEnd = htmlSub.IndexOf("</p>", searchRoomIndexStart);
+                            searchRoomIndexStart += 18;
+                        }
+                        catch
+                        {
+                            break;
+                        }
+
+                        lesson.classRoomNumber += htmlSub.Substring(searchRoomIndexStart, searchRoomIndexEnd - searchRoomIndexStart) + " ";
+                    }
+
+
                     result.Add(lesson);
                     day++;
                 }
@@ -203,41 +234,29 @@ namespace Schedule
             }
             return result;
         }
+    }
 
-        //public struct Cell
-        //{
-        //    public int startIndex { get; set; }
-        //    public int endIndex { get; set; }
+    public struct Lesson
+    {
+        public Day Day { get; set; }
+        public string className { get; set; }
+        public string lessonName { get; set; }
+        public string classRoomNumber { get; set; }
 
-        //    public bool? isLessonName(string html)
-        //    {
-        //        var indexName = html.IndexOf("<p>", startIndex);
-        //        var indexClassNumber = html.IndexOf("<p align=\"center\">", startIndex);
+        public override string ToString()
+        {
+            return $"Класс: {className}, урок: {lessonName}, Кабинет: {classRoomNumber}, День: {Day}";
+        }
+    }
 
-        //        if (indexName == -1 && indexClassNumber == -1)
-        //        {
-        //            return null;
-        //        }
-        //        else if (indexName == -1 && indexClassNumber != -1)
-        //        {
-        //            return false;
-        //        }
-        //        else if (indexName != -1 && indexClassNumber == -1)
-        //        {
-        //            return true;
-        //        }
-
-        //        return null;
-        //    }
-        //}
+    public enum Day
+    {
+        Monday,
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday,
     }
 }
-
-
-//  <td style="width:162px;height:19px;">
-//      <p>3.Английский язык</p>
-//  </td>
-//  <td style="width:47px;height:19px;">
-//      <p align="center">404</p>
-//      <p align="center">411</p>
-//  </td>
