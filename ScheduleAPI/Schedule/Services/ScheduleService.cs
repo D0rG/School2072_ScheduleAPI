@@ -13,9 +13,9 @@ namespace Schedule
         private const string _url = "https://sch2072v.mskobr.ru/uchashimsya/raspisanie-kanikuly";
         private List<Lesson> _lessons = new List<Lesson>();
 
-        public List<Lesson> GetSchedule()
+        public List<Lesson> GetScheduleList(string className = null, Day? day = null)
         {
-            return _lessons;
+            return GetSchedule(className, day).ToList();
         }
 
         public void ScheduleUpdate()
@@ -47,28 +47,42 @@ namespace Schedule
             return res;
         }
 
-        public IEnumerable<Lesson> GetSchedule(string className, Day? day)
+        public IEnumerable<Lesson> GetSchedule(string className = null, Day? day = null)
         {
+            IEnumerable<Lesson> result = null;
+
             if (day == null && className != null)
             {
-                return _lessons
+                result = _lessons
                     .Where(x => x.className.Equals(className));
             }
             else if (className == null && day != null)
             {
-                return _lessons
+                result = _lessons
                     .Where(x => x.Day == day);
             }
             else if (day != null && className != null)
             {
-                return _lessons
+                result = _lessons
                     .Where(x => x.className.Equals(className))
                     .Where(x => x.Day == day);
             }
             else
             {
-                return null;
+                result = _lessons;
             }
+
+            return result;
+        }
+
+        public string GetScheduleString(string className = null, Day? day = null)
+        {
+            string result = string.Empty;
+            foreach (var lessonItem in _lessons)
+            {
+                result += $"{lessonItem.ToString()}\n";
+            }
+            return result;
         }
     }
 }

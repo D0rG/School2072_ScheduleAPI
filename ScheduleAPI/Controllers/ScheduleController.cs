@@ -14,15 +14,10 @@ namespace ScheduleAPI.Controllers
             return Startup.scheduleService.GetSchedule(className, day);
         }
 
-        [HttpGet("/all")]
-        public string GetScheduleString()
+        [HttpGet("/text")]
+        public string GetScheduleString(string className = null, Day? day = null)
         {
-            string result = string.Empty;
-            foreach (var lessonItem in Startup.scheduleService.GetSchedule())
-            {
-                result += $"{lessonItem.ToString()}\n";
-            }
-            return result;
+            return Startup.scheduleService.GetScheduleString(className, day);
         }
     }
 }
