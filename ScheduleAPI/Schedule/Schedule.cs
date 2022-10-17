@@ -12,15 +12,15 @@ namespace Schedule
             "Расписание уроков обучающихся учебного корпуса № 2",
             "Расписание уроков обучающихся учебного корпуса № 1"
         };
-        private string httpResult = string.Empty;
+
+        private string _httpResult = string.Empty;
         private List<Lesson> _lessons = new List<Lesson>();
         public List<Lesson> lessons { get { return _lessons; } }
-
         public Action onScheduleReady;
 
         internal void ParseAll(string httpResult)
         {
-            this.httpResult = httpResult;
+            this._httpResult = httpResult;
             foreach (string schoolName in _schoolNames)
             {
                 Parse(schoolName);
@@ -31,10 +31,10 @@ namespace Schedule
 
         private void Parse(string schoolName)
         {
-            var startTableIndex = httpResult.IndexOf(schoolName);
-            startTableIndex = httpResult.IndexOf("<tbody>", startTableIndex);
-            var endTableIndex = httpResult.IndexOf("</tbody>", startTableIndex);
-            RowCollection rowCollection = new RowCollection(httpResult, startTableIndex, endTableIndex);
+            var startTableIndex = _httpResult.IndexOf(schoolName);
+            startTableIndex = _httpResult.IndexOf("<tbody>", startTableIndex);
+            var endTableIndex = _httpResult.IndexOf("</tbody>", startTableIndex);
+            RowCollection rowCollection = new RowCollection(_httpResult, startTableIndex, endTableIndex);
             foreach (var lesson in rowCollection.GetLessons())
             {
                 _lessons.Add(lesson);
@@ -42,20 +42,15 @@ namespace Schedule
         }
     }
 
-    public class Schedule
+    public sealed class RowCollection
     {
-        public static Dictionary<Day, List<Lesson>> schoolSchedule;
-    }
-
-    public class RowCollection
-    {
-        private string html;
+        private string _html;
         public List<Row> rows = new List<Row>();
         public int Count => rows.Count;
 
         public RowCollection(string html, int start, int end)
         {
-            this.html = html;
+            this._html = html;
             rows = GetAllRows(html).Where(x => (x.startIndex >= start && x.startIndex <= end)).ToList();
             if (rows.Count > 0) { rows.RemoveAt(0); }   //Удяляем первый элемент, т.к. в нем только дни недели.
         }
@@ -101,12 +96,12 @@ namespace Schedule
             string className = string.Empty;
             foreach (var row in rows)
             {
-                if (row.ContainsClassName(html, out string newClassName))
+                if (row.ContainsClassName(_html, out string newClassName))
                 {
                     className = newClassName;
                 }
 
-                foreach (var lesson in row.GetRowLessons(html))
+                foreach (var lesson in row.GetRowLessons(_html))
                 {
                     var temp = lesson;
                     temp.className = new string(className);
