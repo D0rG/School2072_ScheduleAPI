@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
-using Schedule; 
+using Schedule;
+using System.Linq;
 
 namespace ScheduleAPI.Controllers
 {
@@ -9,15 +9,19 @@ namespace ScheduleAPI.Controllers
     public class ScheduleController : ControllerBase
     {
         [HttpGet]
-        public IEnumerable<Lesson> GetSchedule(string className = null, Day? day = null)
+        public IActionResult GetSchedule(string className = null, Day? day = null)
         {
-            return Startup.scheduleService.GetSchedule(className, day);
+            var result = Startup.scheduleService.GetSchedule(className, day).ToList<Lesson>();
+            if (result.Count == 0)  {   return NotFound();  }
+            return Ok(result);
         }
 
         [HttpGet("/text")]
-        public string GetScheduleString(string className = null, Day? day = null)
+        public IActionResult GetScheduleString(string className = null, Day? day = null)
         {
-            return Startup.scheduleService.GetScheduleString(className, day);
+            var result = Startup.scheduleService.GetScheduleString(className, day);
+            if (string.IsNullOrWhiteSpace(result))  {   return NotFound();  }
+            return Ok(result);
         }
     }
 }
